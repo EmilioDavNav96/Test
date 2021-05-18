@@ -84,20 +84,8 @@ mtext(paste0("p=", formatC(sum.mod.AlertDodyM$coefficients[8], format="E", digit
 names(datos)
 boxplot(FID~Area, data=datos)
 
-#Pregunta 3
-#Diferencias en la respuesta entre animales urbanos y rurales
-mod.area.glm <- glm(sqrt(FID) ~ Area, data = datos)
-#supuesto de normalidad
-hist(mod.area.glm$residuals)
-shapiro.test(mod.area.glm$residuals)
-
-#supuesto de homocedasticidad
-plot(mod.area.glm,1)
-bartlett.test(mod.area.glm$residuals, mod.area.glm$fitted.values)
-
-#Summary del modelo
-summary(mod.area.glm)
-boxplot(FID ~ Area, data = datos, notch=T)
+names(datos)
+summary(datos) 
 
 #ANOVA para la pregunta 3
 #El area (rural o urbana) influye en el FID?
@@ -109,7 +97,9 @@ hist(anova.area$residuals)
 shapiro.test(anova.area$residuals)
 
 #verificacion de homocedasticidad
+par(mfrow=c(1,2))
 plot(anova.area,1)
+plot(anova.area,2)
 
 #Kruskal Wallis test
 kruskal.area <- kruskal.test(FID ~ Area, data = datos)
@@ -117,76 +107,140 @@ kruskal.area <- kruskal.test(FID ~ Area, data = datos)
 #El area (rural o urbana) influye en la distancia de alerta ALERTD?
 anova.area.alerta <- aov(sqrt(AlertD) ~ Area, data = datos)
 summary(anova.area.alerta)
-
+summary(anova.area)
 #supuesto de normalidad
+par(mfrow=c(1,1))
 hist(anova.area.alerta$residuals)
 shapiro.test(anova.area.alerta$residuals)
+
+#verificacion de homocedasticidad
+par(mfrow=c(1,2))
+plot(anova.area.alerta,1)
+plot(anova.area.alerta,2)
 
 #supuesto de heterocedasticidad 
 bartlett.test(datos$AlertD~datos$Area)
 
 #boxplot
+par(mfrow=c(1,1))
 boxplot(AlertD ~ Area, data=datos, notch=T)
 
 #Pregunta 4
 #Los animales de zonas rurales y urbanas responden de forma diferente al tipo de depredador
 #modificando su FID?
-anova.depredador.fid <- aov(sqrt(FID) ~ Area*Predator, data=datos)
+anova.depredador.fid <- aov(FID ~ Area*Predator, data=datos)
 summary(anova.depredador.fid)
 
+par(mfrow=c(1,1))
 boxplot(FID~Area*Predator, data=datos)
+interaction.plot(x.factor = datos$Predator,
+                 trace.factor = datos$Area, # variable to plot on x-axis
+                 response = datos$FID,    # variable to plot on y-axis
+                 fun = median,  # summary statistic to be plotted for response variable
+                 type = "l",     # type of plot, here "l" for lines
+                 ylab = "Area:Predator",
+                 xlab = "FID",
+                 col = c("blue4", "red4"),
+                 lty = 1,  # line type
+                 lwd = 2,  # line width
+                 trace.label = "Transmission",  # label for legend
+                 xpd = FALSE) #,  # 'clip' legend at border
 
 #supuesto de normalidad
 hist(anova.depredador.fid$residuals)
 shapiro.test(anova.depredador.fid$residuals)
 
+#Homocedasticidad
+par(mfrow=c(1,2))
+plot(anova.depredador.fid,1)
+plot(anova.depredador.fid,2)
+
 #Pregunta 5
 #Hacer modelo que mejor explique la variación en distancia de alerta AlertD para todos
 #los individuos
-#Modelo saturado con interacciones 
+
+#Modelo A
+mod.b <- glm(AlertD ~ BodyM*Area, data=datos)
+summary(mod.b)
+
+#supuestos
+#normalidad
+hist(mod.b$residuals)
+shapiro.test(mod.b$residuals)
+
+#homocedasticidad
+par(mfrow=c(1,2))
+plot(mod.b,1)
+plot(mod.b,2)
+
+
+#Modelo B
+mod.c <- glm(AlertD ~ BodyM + Area, data=datos)
+summary(mod.c)
+
+#supuestos
+#normalidad
+hist(mod.c$residuals)
+shapiro.test(mod.c$residuals)
+
+#homocedasticidad
+par(mfrow=c(1,2))
+plot(mod.c,1)
+plot(mod.c,2)
+
 names(datos)
-mod.satur.inter <- glm(AlertD ~ Area*Predator*BodyM, data=datos)
-summary(mod.satur.inter)
 
+#Modelo C
+mod.d <- glm(AlertD ~ BodyM + Area + Predator, data=datos)
+summary(mod.d)
 
+#supuestos
 #normalidad
-hist(mod.satur.inter$residuals)
-shapiro.test(mod.satur.inter$residuals)
+hist(mod.d$residuals)
+shapiro.test(mod.d$residuals)
 
 #homocedasticidad
-plot(mod.satur.inter, 1)
+par(mfrow=c(1,2))
+plot(mod.d,1)
+plot(mod.d,2)
 
-#Modelo saturado sin interacciones 
+#Modelo D
+mod.e <- glm(AlertD ~ BodyM*Predator+Area, data=datos)
+summary(mod.e)
+
+#supuestos
+#normalidad
+hist(mod.e$residuals)
+shapiro.test(mod.e$residuals)
+
+#homocedasticidad
+par(mfrow=c(1,2))
+plot(mod.e,1)
+plot(mod.e,2)
+
 names(datos)
-mod.satur <- glm(AlertD ~ Area+Predator+BodyM, data=datos)
-summary(mod.satur)
 
-#normalidad
-hist(mod.satur$residuals)
-shapiro.test(mod.satur$residuals)
+#Modelo Brenda
+par(mfrow=c(1,1))
+bren<-glm(BodyM~Area, data=datos)
+summary(bren)
+boxplot(BodyM~Area, data=datos, notch=T)
+boxplot(AlertD~Area*BodyM, data=datos, notch=T)
+interaction.plot(x.factor = datos$Area,
+                 trace.factor = datos$BodyM, # variable to plot on x-axis
+                 response = datos$AlertD,    # variable to plot on y-axis
+                 fun = median,  # summary statistic to be plotted for response variable
+                 type = "l",     # type of plot, here "l" for lines
+                 ylab = "AlertD",
+                 xlab = "BodyM",
+                 col = c("blue4", "red4"),
+                 lty = 1,  # line type
+                 lwd = 2,  # line width
+                 trace.label = "Transmission",  # label for legend
+                 xpd = FALSE) #,  # 'clip' legend at border
 
-#homocedasticidad
-plot(mod.satur, 1)
 
-#ModeloA - Area y peso corporal sin interaccion
-mod.no.pred <- glm(AlertD ~ Area+BodyM, data=datos)
-summary(mod.no.pred)
-
-#normalidad
-hist(mod.no.pred$residuals)
-shapiro.test(mod.no.pred$residuals)
-
-#homocedasticidad
-plot(mod.no.pred, 1)
-
-#Modelo B - Area y masa corporal con interaccion
-mod.no.pred.inter <- glm(AlertD ~ Area*BodyM, data=datos)
-summary(mod.no.pred.inter)
-
-#normalidad
-hist(mod.no.pred.inter$residuals)
-shapiro.test(mod.no.pred.inter$residuals)
-
-#homocedasticidad 
-plot(mod.no.pred.inter, 1)
-
+hist(bren$residuals)
+par(mfrow=c(1,2))
+plot(bren,1)
+plot(bren,2)
